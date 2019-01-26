@@ -17,8 +17,10 @@ public class UnprotectProcessor {
             classNames.put(classNode.name, classNode);
         }
 
+        log("    Looking for main class...");
         MethodNode onEnable = findOnEnable(classNodes);
         if (onEnable != null) {
+            log("    Main class found.");
             String classOneName = getNextInstance(onEnable);
             if (classOneName != null) {
                 ClassNode classOne = classNames.get(classOneName);
@@ -26,6 +28,7 @@ public class UnprotectProcessor {
                     String classTwoName = getNextInstance(classOne);
                     ClassNode classTwo;
                     if (classTwoName != null && (classTwo = classNames.get(classTwoName)) != null) {
+                        log("    License checking class found.");
                         String licenseMethodName = null;
                         String licenseMethodDesc = null;
                         String mainVarName = null;
@@ -46,11 +49,13 @@ public class UnprotectProcessor {
                             }
                         }
                         if (licenseMethodName != null) {
+                            log("    License checking method found.");
                             for (MethodNode method : classTwo.methods) {
                                 if (method.name.equals(licenseMethodName) && method.desc.equals(licenseMethodDesc)) {
-                                    System.out.println("Class name: " + classTwo.name);
-                                    System.out.println("License method: " + method.name);
-                                    System.out.println("Main var: " + mainVarName);
+                                    log("        License checking class: " + classTwo.name);
+                                    log("        License checking method: " + method.name);
+                                    log("        Main class variable: " + mainVarName);
+
                                     // Find starter class
                                     String starterClassName = null;
                                     for (AbstractInsnNode abstractInsnNode : method.instructions.toArray()) {
@@ -65,8 +70,9 @@ public class UnprotectProcessor {
                                             }
                                         }
                                     }
-                                    System.out.println(starterClassName);
+                                    log("    Plugin starter class found.");
 
+                                    log("    Patching license check...");
                                     // Unprotect
                                     method.instructions.clear();
                                     method.maxLocals = 1;
@@ -88,8 +94,10 @@ public class UnprotectProcessor {
                                     toAdd.add(new InsnNode(Opcodes.RETURN));
                                     toAdd.add(new LabelNode());
                                     method.instructions.add(toAdd);
+                                    log("    License check patched.");
 
                                     // Unprotect starter
+                                    log("    Patching plugin starter...");
                                     ClassNode starterClass = classNames.get(starterClassName);
                                     for (MethodNode methodNode : starterClass.methods) {
                                         if (methodNode.desc.equals("(Ljava/lang/String;)V") && !methodNode.name.equals("<init>")) {
@@ -102,6 +110,7 @@ public class UnprotectProcessor {
                                             }
                                         }
                                     }
+                                    log("    Plugin starter patched.");
                                 }
                             }
                         }

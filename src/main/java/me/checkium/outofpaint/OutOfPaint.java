@@ -63,19 +63,15 @@ public class OutOfPaint {
     }
 
     private void process(File input, File output) throws Throwable {
-        progress = 0;
-        progressBar.setValue((int) progress);
+        progressBar.setValue(0);
         log("Loading file...");
 
+        long current = System.currentTimeMillis();
         ZipFile zipFile = new ZipFile(input);
         Enumeration<? extends ZipEntry> entries = zipFile.entries();
         Map<String, ClassNode> classes = new HashMap<>();
         ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(output));
 
-        double taskProgress = 100 / (unprotect && deobfuscateStrings ? 3 : 2);
-        double perEntry = Math.ceil(countRegularFiles(zipFile) / taskProgress);
-
-        long current = System.currentTimeMillis();
         while (entries.hasMoreElements()) {
             ZipEntry entry = entries.nextElement();
 
@@ -91,19 +87,33 @@ public class OutOfPaint {
                 zos.write(IOUtils.toByteArray(zipFile.getInputStream(entry)));
             }
         }
+        log("File loaded in " + (System.currentTimeMillis() - current) + "ms");
+        progressBar.setValue(1);
 
-        double perClass = Math.ceil(classes.values().size() / taskProgress);
+        current = System.currentTimeMillis();
         if (deobfuscateStrings) {
             log("Deobfuscating strings...");
             DeobfuscateStringsProcessor processor = new DeobfuscateStringsProcessor();
             processor.proccess(classes.values());
+            log("Strings deobfuscated in " + (System.currentTimeMillis() - current) + "ms");
+            progressBar.setValue(2);
+        } else {
+            progressBar.setValue(2);
         }
+
+        current = System.currentTimeMillis();
         if (unprotect) {
             log("Unprotecting...");
             UnprotectProcessor processor = new UnprotectProcessor();
             processor.proccess(classes.values());
+            log("Unprotected in " + (System.currentTimeMillis() - current) + "ms");
+            progressBar.setValue(3);
+        } else {
+            progressBar.setValue(3);
         }
 
+        current = System.currentTimeMillis();
+        log("Writing file...");
         for (ClassNode cn : classes.values()) {
             ClassWriter cw = new ClassWriter(0);
             cn.accept(cw);
@@ -116,16 +126,9 @@ public class OutOfPaint {
         }
 
         zos.close();
+        log("Filed written in " + (System.currentTimeMillis() - current) + "ms");
+        log("Finished processing.");
+        progressBar.setValue(4);
     }
 
-    private int countRegularFiles(final ZipFile zipFile) {
-        final Enumeration<? extends ZipEntry> entries = zipFile.entries();
-        int numRegularFiles = 0;
-        while (entries.hasMoreElements()) {
-            if (!entries.nextElement().isDirectory()) {
-                ++numRegularFiles;
-            }
-        }
-        return numRegularFiles;
-    }
 }

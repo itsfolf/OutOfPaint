@@ -110,7 +110,9 @@
                 <children>
                   <component id="79c79" class="javax.swing.JProgressBar" binding="progressBar">
                     <constraints border-constraint="Center"/>
-                    <properties/>
+                    <properties>
+                      <maximum value="4"/>
+                    </properties>
                   </component>
                 </children>
               </grid>
