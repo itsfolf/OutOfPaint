@@ -16,6 +16,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static me.checkium.outofpaint.OutOfPaint.log;
+
 public class DeobfuscateStringsProcessor {
 
     public void proccess(Collection<ClassNode> classNodes) {
@@ -23,6 +25,7 @@ public class DeobfuscateStringsProcessor {
         for (ClassNode classNode : classNodes) {
             classNames.put(classNode.name, classNode);
         }
+        int amount = 0;
         Map<String, MethodNode> decryptMethodCache = new HashMap<>();
         for (ClassNode classNode : classNames.values()) {
             for (MethodNode method : classNode.methods) {
@@ -30,8 +33,6 @@ public class DeobfuscateStringsProcessor {
                     if (abstractInsnNode instanceof LdcInsnNode && ((LdcInsnNode) abstractInsnNode).cst instanceof String) {
                         String encryptedString = (String) ((LdcInsnNode) abstractInsnNode).cst;
                         String decryptKey = classNode.name.replaceAll("/", ".") + method.name.replaceAll("/", ".");
-                        System.out.println("Found string " + encryptedString);
-                        System.out.println("Looking for decryption method...");
                         MethodInsnNode decryptCall;
                         if (abstractInsnNode.getNext() instanceof MethodInsnNode) {
                             decryptCall = (MethodInsnNode) abstractInsnNode.getNext();
@@ -43,12 +44,11 @@ public class DeobfuscateStringsProcessor {
                                     for (MethodNode decryptClassMethod : decryptClass.methods) {
                                         if (decryptClassMethod.name.equals(decryptMethodName) && decryptClassMethod.desc.equals(decryptCall.desc)) {
                                             String methodLoc = decryptMethodOwner + " " + decryptMethodName;
-                                            System.out.println("Found decrypt method " + methodLoc);
                                             if (decryptMethodCache.containsKey(methodLoc)) {
-                                                System.out.println("Method is cached, decrypting...");
-                                                OutOfPaint.log(encryptedString + " -> " + getString(encryptedString, decryptClass, decryptMethodCache.get(methodLoc), decryptKey));
+                                                ((LdcInsnNode) abstractInsnNode).cst = getString(encryptedString, decryptClass, decryptMethodCache.get(methodLoc), decryptKey);
+                                                method.instructions.remove(decryptCall);
+                                                amount++;
                                             } else {
-                                                System.out.println("Method is not cached, transforming method...");
                                                 int current = 0;
                                                 for (AbstractInsnNode insnNode : decryptClassMethod.instructions.toArray()) {
                                                     if (current > 0) decryptClassMethod.instructions.remove(insnNode);
@@ -61,19 +61,27 @@ public class DeobfuscateStringsProcessor {
                                                 toAdd.add(new LdcInsnNode("toChange"));
                                                 decryptClassMethod.instructions.insert(decryptClassMethod.instructions.getFirst(), toAdd);
                                                 decryptMethodCache.put(methodLoc, decryptClassMethod);
-                                                OutOfPaint.log(encryptedString + " -> " + getString(encryptedString, decryptClass, decryptMethodCache.get(methodLoc), decryptKey));
+                                                ((LdcInsnNode) abstractInsnNode).cst = getString(encryptedString, decryptClass, decryptMethodCache.get(methodLoc), decryptKey);
+                                                method.instructions.remove(decryptCall);
+                                                amount++;
                                             }
+                                        }
+                                        if (encryptedString.equals(((LdcInsnNode) abstractInsnNode).cst)) {
+                                            System.out.println("Warning: String " + encryptedString + " at " + decryptKey + " didn't change during decryption.");
                                         }
                                     }
                                 } else {
                                     System.out.println("Couldn't find class " + decryptMethodOwner);
                                 }
                             }
+                        } else {
+                            System.out.println("Warning: String " + encryptedString + " at " + decryptKey + " has no decryption method.");
                         }
                     }
                 }
             }
         }
+        log("   Deobfuscated " + amount + " strings.");
     }
 
     private String getString(String encryptedString, ClassNode decrypterClass, MethodNode decrypterMethod, String decryptKey) {
