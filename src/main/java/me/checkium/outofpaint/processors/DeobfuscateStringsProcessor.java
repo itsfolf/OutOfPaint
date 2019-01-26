@@ -11,14 +11,14 @@ import me.checkium.outofpaint.utils.methodexecutor.executor.values.JavaValue;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class DeobfuscateStringsProcessor {
 
-    public void proccess(List<ClassNode> classNodes) {
+    public void proccess(Collection<ClassNode> classNodes) {
         Map<String, ClassNode> classNames = new HashMap<>();
         for (ClassNode classNode : classNodes) {
             classNames.put(classNode.name, classNode);

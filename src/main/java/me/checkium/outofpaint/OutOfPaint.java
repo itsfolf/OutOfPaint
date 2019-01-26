@@ -3,17 +3,20 @@ package me.checkium.outofpaint;
 import me.checkium.outofpaint.frame.OutOfPaintGUI;
 import me.checkium.outofpaint.processors.DeobfuscateStringsProcessor;
 import me.checkium.outofpaint.processors.UnprotectProcessor;
+import org.apache.commons.io.IOUtils;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 
 import javax.swing.*;
 import java.io.File;
-import java.io.InputStream;
-import java.util.ArrayList;
+import java.io.FileOutputStream;
 import java.util.Enumeration;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 public class OutOfPaint {
     public static JTextArea logger;
@@ -51,7 +54,7 @@ public class OutOfPaint {
         }
         new Thread(() -> {
             try {
-                process(input);
+                process(input, output);
             } catch (Throwable throwable) {
                 throwable.printStackTrace();
             }
@@ -59,44 +62,60 @@ public class OutOfPaint {
 
     }
 
-    private void process(File jarFile) throws Throwable {
+    private void process(File input, File output) throws Throwable {
         progress = 0;
         progressBar.setValue((int) progress);
         log("Loading file...");
-        ZipFile zipFile = new ZipFile(jarFile);
+
+        ZipFile zipFile = new ZipFile(input);
         Enumeration<? extends ZipEntry> entries = zipFile.entries();
-        List<ClassNode> nodes = new ArrayList<>();
+        Map<String, ClassNode> classes = new HashMap<>();
+        ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(output));
+
         double taskProgress = 100 / (unprotect && deobfuscateStrings ? 3 : 2);
         double perEntry = Math.ceil(countRegularFiles(zipFile) / taskProgress);
-        ;
-        try {
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = entries.nextElement();
-                if (!entry.isDirectory() && entry.getName().endsWith(".class")) {
-                    try (InputStream in = zipFile.getInputStream(entry)) {
-                        ClassReader cr = new ClassReader(in);
-                        ClassNode classNode = new ClassNode();
-                        cr.accept(classNode, 0);
-                        nodes.add(classNode);
-                        progress += perEntry;
-                        progressBar.setValue((int) progress);
-                    }
-                }
+
+        long current = System.currentTimeMillis();
+        while (entries.hasMoreElements()) {
+            ZipEntry entry = entries.nextElement();
+
+            if (entry.getName().endsWith(".class")) {
+                ClassReader cr = new ClassReader(zipFile.getInputStream(entry));
+                ClassNode classNode = new ClassNode();
+                cr.accept(classNode, 0);
+                classes.put(classNode.name, classNode);
+            } else {
+                ZipEntry newEntry = new ZipEntry(entry);
+                newEntry.setTime(current);
+                zos.putNextEntry(newEntry);
+                zos.write(IOUtils.toByteArray(zipFile.getInputStream(entry)));
             }
-        } finally {
-            zipFile.close();
         }
-        double perClass = Math.ceil(nodes.size() / taskProgress);
+
+        double perClass = Math.ceil(classes.values().size() / taskProgress);
         if (deobfuscateStrings) {
             log("Deobfuscating strings...");
             DeobfuscateStringsProcessor processor = new DeobfuscateStringsProcessor();
-            processor.proccess(nodes);
+            processor.proccess(classes.values());
         }
         if (unprotect) {
             log("Unprotecting...");
             UnprotectProcessor processor = new UnprotectProcessor();
-            processor.proccess(nodes);
+            processor.proccess(classes.values());
         }
+
+        for (ClassNode cn : classes.values()) {
+            ClassWriter cw = new ClassWriter(0);
+            cn.accept(cw);
+
+            ZipEntry newEntry = new ZipEntry(cn.name + ".class");
+            newEntry.setTime(current);
+
+            zos.putNextEntry(newEntry);
+            zos.write(cw.toByteArray());
+        }
+
+        zos.close();
     }
 
     private int countRegularFiles(final ZipFile zipFile) {

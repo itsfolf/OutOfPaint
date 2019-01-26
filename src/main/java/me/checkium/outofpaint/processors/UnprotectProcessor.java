@@ -1,19 +1,17 @@
 package me.checkium.outofpaint.processors;
 
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static me.checkium.outofpaint.OutOfPaint.log;
-import static me.checkium.outofpaint.OutOfPaint.main;
 
 public class UnprotectProcessor {
 
-    public void proccess(List<ClassNode> classNodes) {
+    public void proccess(Collection<ClassNode> classNodes) {
         Map<String, ClassNode> classNames = new HashMap<>();
         for (ClassNode classNode : classNodes) {
             classNames.put(classNode.name, classNode);
@@ -49,61 +47,61 @@ public class UnprotectProcessor {
                         }
                         if (licenseMethodName != null) {
                             for (MethodNode method : classTwo.methods) {
-                               if (method.name.equals(licenseMethodName) && method.desc.equals(licenseMethodDesc)) {
-                                   System.out.println("Class name: " + classTwo.name);
-                                   System.out.println("License method: " + method.name);
-                                   System.out.println("Main var: " + mainVarName);
-                                   // Find starter class
-                                   String starterClassName = null;
-                                   for (AbstractInsnNode abstractInsnNode : method.instructions.toArray()) {
-                                       if (abstractInsnNode instanceof TypeInsnNode) {
-                                           ClassNode node = classNames.get(((TypeInsnNode) abstractInsnNode).desc);
-                                           if (node != null) {
-                                               for (MethodNode methodNode : node.methods) {
-                                                   if (methodNode.name.equals("<init>") && methodNode.desc.startsWith("(L" + findMainClass(classNodes).name)) {
-                                                       starterClassName = ((TypeInsnNode) abstractInsnNode).desc;
-                                                   }
-                                               }
-                                           }
-                                       }
-                                   }
-                                   System.out.println(starterClassName);
+                                if (method.name.equals(licenseMethodName) && method.desc.equals(licenseMethodDesc)) {
+                                    System.out.println("Class name: " + classTwo.name);
+                                    System.out.println("License method: " + method.name);
+                                    System.out.println("Main var: " + mainVarName);
+                                    // Find starter class
+                                    String starterClassName = null;
+                                    for (AbstractInsnNode abstractInsnNode : method.instructions.toArray()) {
+                                        if (abstractInsnNode instanceof TypeInsnNode) {
+                                            ClassNode node = classNames.get(((TypeInsnNode) abstractInsnNode).desc);
+                                            if (node != null) {
+                                                for (MethodNode methodNode : node.methods) {
+                                                    if (methodNode.name.equals("<init>") && methodNode.desc.startsWith("(L" + findMainClass(classNodes).name)) {
+                                                        starterClassName = ((TypeInsnNode) abstractInsnNode).desc;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    System.out.println(starterClassName);
 
-                                   // Unprotect
-                                   method.instructions.clear();
-                                   method.maxLocals = 1;
-                                   method.maxStack = 4;
-                                   InsnList toAdd = new InsnList();
-                                   toAdd.add(new LabelNode());
+                                    // Unprotect
+                                    method.instructions.clear();
+                                    method.maxLocals = 1;
+                                    method.maxStack = 4;
+                                    InsnList toAdd = new InsnList();
+                                    toAdd.add(new LabelNode());
 
-                                   toAdd.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/bukkit/Bukkit", "getConsoleSender", "()Lorg/bukkit/command/ConsoleCommandSender;", false));
-                                   toAdd.add(new LdcInsnNode("§4§lWARNING: This plugin has been patched using OutOfPaint and shouldn't be used in production."));
-                                   toAdd.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, "org/bukkit/command/ConsoleCommandSender", "sendMessage", "(Ljava/lang/String;)V", true));
+                                    toAdd.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/bukkit/Bukkit", "getConsoleSender", "()Lorg/bukkit/command/ConsoleCommandSender;", false));
+                                    toAdd.add(new LdcInsnNode("§4§lWARNING: This plugin has been patched using OutOfPaint and shouldn't be used in production."));
+                                    toAdd.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, "org/bukkit/command/ConsoleCommandSender", "sendMessage", "(Ljava/lang/String;)V", true));
 
-                                   toAdd.add(new TypeInsnNode(Opcodes.NEW, starterClassName));
-                                   toAdd.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                                   toAdd.add(new FieldInsnNode(Opcodes.GETFIELD, classTwo.name, mainVarName, "L" + findMainClass(classNodes).name));
-                                   toAdd.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                                   toAdd.add(new LdcInsnNode("OutOfPaint"));
-                                   toAdd.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, starterClassName, "<init>", "(L" + findMainClass(classNodes).name + ";" + classTwo.name + ";Ljava/lang/String;)V", false));
-                                   toAdd.add(new InsnNode(Opcodes.RETURN));
-                                   toAdd.add(new LabelNode());
-                                   method.instructions.add(toAdd);
+                                    toAdd.add(new TypeInsnNode(Opcodes.NEW, starterClassName));
+                                    toAdd.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                                    toAdd.add(new FieldInsnNode(Opcodes.GETFIELD, classTwo.name, mainVarName, "L" + findMainClass(classNodes).name));
+                                    toAdd.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                                    toAdd.add(new LdcInsnNode("OutOfPaint"));
+                                    toAdd.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, starterClassName, "<init>", "(L" + findMainClass(classNodes).name + ";" + classTwo.name + ";Ljava/lang/String;)V", false));
+                                    toAdd.add(new InsnNode(Opcodes.RETURN));
+                                    toAdd.add(new LabelNode());
+                                    method.instructions.add(toAdd);
 
-                                   // Unprotect starter
-                                   ClassNode starterClass = classNames.get(starterClassName);
-                                   for (MethodNode methodNode : starterClass.methods) {
-                                      if (methodNode.desc.equals("(Ljava/lang/String;)V") && !methodNode.name.equals("<init>")) {
-                                          for (AbstractInsnNode abstractInsnNode : methodNode.instructions.toArray()) {
-                                              if (abstractInsnNode instanceof MethodInsnNode && ((MethodInsnNode) abstractInsnNode).name.equals("equals")) {
-                                                  methodNode.instructions.remove(abstractInsnNode.getPrevious().getPrevious());
-                                                  methodNode.instructions.remove(abstractInsnNode.getPrevious());
-                                                  methodNode.instructions.insertBefore(abstractInsnNode, new LdcInsnNode("OutOfPaint"));
-                                              }
-                                          }
-                                      }
-                                   }
-                               }
+                                    // Unprotect starter
+                                    ClassNode starterClass = classNames.get(starterClassName);
+                                    for (MethodNode methodNode : starterClass.methods) {
+                                        if (methodNode.desc.equals("(Ljava/lang/String;)V") && !methodNode.name.equals("<init>")) {
+                                            for (AbstractInsnNode abstractInsnNode : methodNode.instructions.toArray()) {
+                                                if (abstractInsnNode instanceof MethodInsnNode && ((MethodInsnNode) abstractInsnNode).name.equals("equals")) {
+                                                    methodNode.instructions.remove(abstractInsnNode.getPrevious().getPrevious());
+                                                    methodNode.instructions.remove(abstractInsnNode.getPrevious());
+                                                    methodNode.instructions.insertBefore(abstractInsnNode, new LdcInsnNode("OutOfPaint"));
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -128,15 +126,16 @@ public class UnprotectProcessor {
         return null;
     }
 
-    private ClassNode findMainClass(List<ClassNode> classes) {
+    private ClassNode findMainClass(Collection<ClassNode> classes) {
         for (ClassNode aClass : classes) {
             if (aClass.superName.equals("org/bukkit/plugin/java/JavaPlugin")) {
-               return aClass;
+                return aClass;
             }
         }
         return null;
     }
-    private MethodNode findOnEnable(List<ClassNode> classes) {
+
+    private MethodNode findOnEnable(Collection<ClassNode> classes) {
         ClassNode node = findMainClass(classes);
         if (node != null) {
             for (MethodNode method : node.methods) {
