@@ -1,0 +1,24 @@
+plugins {
+    id 'java'
+}
+
+group 'OutOfPaint'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://repository.ow2.org/nexus/service/local/repositories/releases/content' }
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile 'org.ow2.asm:asm:7.0'
+    compile 'org.ow2.asm:asm-util:7.0'
+    compile 'org.ow2.asm:asm-tree:7.0'
+    compile 'org.ow2.asm:asm-commons:7.0'
+    compile 'org.ow2.asm:asm-analysis:7.0'
+    compile 'commons-io:commons-io:2.5'
+    compile 'com.google.guava:guava:19.0'
+}
