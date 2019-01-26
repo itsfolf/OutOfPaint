@@ -2,6 +2,7 @@ package me.checkium.outofpaint;
 
 import me.checkium.outofpaint.frame.OutOfPaintGUI;
 import me.checkium.outofpaint.processors.DeobfuscateStringsProcessor;
+import me.checkium.outofpaint.processors.UnprotectProcessor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -89,6 +90,11 @@ public class OutOfPaint {
         if (deobfuscateStrings) {
             log("Deobfuscating strings...");
             DeobfuscateStringsProcessor processor = new DeobfuscateStringsProcessor();
+            processor.proccess(nodes);
+        }
+        if (unprotect) {
+            log("Unprotecting...");
+            UnprotectProcessor processor = new UnprotectProcessor();
             processor.proccess(nodes);
         }
     }
