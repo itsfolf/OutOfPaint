@@ -84,7 +84,7 @@ public class UnprotectProcessor {
                                     toAdd.add(new FieldInsnNode(Opcodes.GETFIELD, classTwo.name, mainVarName, "L" + findMainClass(classNodes).name + ";"));
                                     toAdd.add(new VarInsnNode(Opcodes.ALOAD, 0));
                                     toAdd.add(new LdcInsnNode("OutOfPaint"));
-                                    toAdd.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, starterClassName, "<init>", "(L" + findMainClass(classNodes).name + ";L" + classTwo.name + ";Ljava/lang/String;)V", false));
+                                    toAdd.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, starterClassName, "<init>", "(L" + findMainClass(classNodes).name + ";L" + classTwo.name + ";Ljava/lang/String;)V", false));
                                     toAdd.add(new InsnNode(Opcodes.RETURN));
                                     toAdd.add(new LabelNode());
                                     method.instructions.add(toAdd);
