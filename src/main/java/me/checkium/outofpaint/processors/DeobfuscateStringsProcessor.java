@@ -1,13 +1,13 @@
 package me.checkium.outofpaint.processors;
 
 import me.checkium.outofpaint.OutOfPaint;
-import me.checkium.outofpaint.utils.executor.Context;
-import me.checkium.outofpaint.utils.executor.MethodExecutor;
-import me.checkium.outofpaint.utils.executor.defined.JVMComparisonProvider;
-import me.checkium.outofpaint.utils.executor.defined.JVMMethodProvider;
-import me.checkium.outofpaint.utils.executor.defined.MappedFieldProvider;
-import me.checkium.outofpaint.utils.executor.providers.DelegatingProvider;
-import me.checkium.outofpaint.utils.executor.values.JavaValue;
+import me.checkium.outofpaint.utils.methodexecutor.executor.Context;
+import me.checkium.outofpaint.utils.methodexecutor.executor.MethodExecutor;
+import me.checkium.outofpaint.utils.methodexecutor.executor.defined.JVMComparisonProvider;
+import me.checkium.outofpaint.utils.methodexecutor.executor.defined.JVMMethodProvider;
+import me.checkium.outofpaint.utils.methodexecutor.executor.defined.MappedFieldProvider;
+import me.checkium.outofpaint.utils.methodexecutor.executor.providers.DelegatingProvider;
+import me.checkium.outofpaint.utils.methodexecutor.executor.values.JavaValue;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
