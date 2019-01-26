@@ -75,6 +75,11 @@ public class UnprotectProcessor {
                                    method.maxStack = 4;
                                    InsnList toAdd = new InsnList();
                                    toAdd.add(new LabelNode());
+
+                                   toAdd.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/bukkit/Bukkit", "getConsoleSender", "()Lorg/bukkit/command/ConsoleCommandSender;", false));
+                                   toAdd.add(new LdcInsnNode("§4§lWARNING: This plugin has been patched using OutOfPaint and shouldn't be used in production."));
+                                   toAdd.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, "org/bukkit/command/ConsoleCommandSender", "sendMessage", "(Ljava/lang/String;)V", true));
+
                                    toAdd.add(new TypeInsnNode(Opcodes.NEW, starterClassName));
                                    toAdd.add(new VarInsnNode(Opcodes.ALOAD, 0));
                                    toAdd.add(new FieldInsnNode(Opcodes.GETFIELD, classTwo.name, mainVarName, "L" + findMainClass(classNodes).name));
